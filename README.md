@@ -1,0 +1,144 @@
+# OpenGL Solar System
+
+A real-time 3D solar-system visualization written in **C++17** and **OpenGL 3.3 Core**.
+
+The renderer procedurally generates sphere meshes for the Sun and planets, applies texture maps, animates planetary rotation and orbital motion, draws orbital paths and procedural Saturn rings, and provides a free-moving first-person camera.
+
+> The scene is a visualization rather than an astronomical simulation: sizes, distances, orbital speeds, and rotations are intentionally stylized for visibility.
+
+## Features
+
+- Procedural UV-sphere generation using sectors and stacks
+- Indexed rendering with VAOs, VBOs, and EBOs
+- Vertex and fragment shader loading/compilation
+- Texture loading with `stb_image`
+- Model, view, and projection transformations with GLM
+- Animated planetary orbits and axial rotation
+- Orbital path rendering
+- Saturn ring rendering
+- Mouse-controlled camera orientation
+- WASD camera movement with frame-time-independent motion
+- Scroll-wheel field-of-view zoom
+- Depth testing
+
+## Tech Stack
+
+- C++17
+- OpenGL 3.3 Core
+- GLFW
+- GLEW
+- GLM
+- stb_image
+- CMake
+
+The required C/C++ library sources are included under `third_party/`, so no separate download of GLFW, GLEW, GLM, or stb is required.
+
+## Project Structure
+
+```text
+opengl-solar-system/
+├── assets/
+│   └── textures/        # Sun and planet textures
+├── include/
+│   ├── Camera.h         # Camera movement, mouse look and zoom
+│   ├── Shader.h         # Shader loading, compilation and uniforms
+│   ├── Sphere.h         # Procedural sphere mesh generation
+│   ├── Texture.h        # OpenGL texture wrapper
+│   └── ProjectPaths.h.in
+├── shaders/
+│   ├── vert.glsl
+│   └── frag.glsl
+├── src/
+│   ├── main.cpp         # Scene setup, animation and rendering loop
+│   └── stb_image.cpp
+├── third_party/         # Vendored dependencies
+├── CMakeLists.txt
+└── README.md
+```
+
+## Building
+
+### Requirements
+
+- CMake 3.16+
+- A C++17-capable compiler
+- OpenGL development files / drivers available on the system
+
+On Ubuntu/Debian, GLFW may additionally require the usual X11 development packages. A typical setup is:
+
+```bash
+sudo apt install build-essential cmake libgl1-mesa-dev xorg-dev
+```
+
+### Configure and build
+
+From the project root:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+```
+
+On a single-config generator such as Make or Ninja, the executable is typically:
+
+```text
+build/solar_system
+```
+
+With Visual Studio generators on Windows, it is typically under:
+
+```text
+build/Release/solar_system.exe
+```
+
+CMake copies `assets/`, `shaders/`, `licenses/`, and `THIRD_PARTY_NOTICES.md` beside the executable. You can move that complete directory and launch it from any working directory. Do not move only the executable. Resource lookup checks the executable's directory first, then the working directory and the original source tree.
+
+For a clean portable distribution directory:
+
+```bash
+cmake --install build --config Release --prefix dist
+```
+
+On Windows, install Visual Studio's **Desktop development with C++** workload and CMake. On macOS, install the Xcode command-line tools and CMake. Linux also needs a graphical X11 session (or XWayland) and OpenGL 3.3 support.
+
+The bundled GLFW 3.3.2 uses a CMake 4-compatible policy baseline set by the root build file. Its upstream source is otherwise unchanged.
+
+For a short startup/rendering check, run `solar_system --smoke-test`. It loads all resources, renders three frames, checks OpenGL errors, and exits. A display and OpenGL context are required.
+
+## Controls
+
+| Input | Action |
+| --- | --- |
+| `W` | Move forward |
+| `S` | Move backward |
+| `A` | Move left |
+| `D` | Move right |
+| Mouse | Look around |
+| Mouse wheel | Zoom |
+| `Esc` | Close the application |
+
+## Rendering Overview
+
+### Procedural spheres
+
+`Sphere.h` generates vertices from latitude/longitude-style **stacks** and **sectors**, creates texture coordinates, builds triangle indices, and uploads the mesh to OpenGL buffers.
+
+### Transformations
+
+Each celestial body uses model transformations for orbital position, axial tilt, and self-rotation. The camera provides the view matrix, while a perspective projection creates depth.
+
+### Timing
+
+GLFW time is used for both animation and frame delta calculation. Camera movement is multiplied by `deltaTime`, keeping movement speed approximately independent of frame rate.
+
+## Asset attribution
+
+Sun and planet textures by **Solar System Scope**, licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)**.
+
+- Source: https://www.solarsystemscope.com/textures/
+- License: https://creativecommons.org/licenses/by/4.0/
+- Per-file provenance and verification: `THIRD_PARTY_NOTICES.md`
+
+Keep the attribution and license links when distributing these textures, including in a public repository or binary release. Saturn's rings are generated by the shader; the previous image of unverified origin is not included.
+
+Third-party library licenses are preserved in `third_party/` and copied into `licenses/` for binary distributions. These licenses cover the corresponding dependencies and assets; they do not assign a license to the project's own application code.

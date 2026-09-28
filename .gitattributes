@@ -1,0 +1,2 @@
+# Keep vendored dependencies from dominating GitHub language statistics.
+third_party/** linguist-vendored

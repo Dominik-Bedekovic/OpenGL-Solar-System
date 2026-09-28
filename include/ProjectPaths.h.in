@@ -1,0 +1,43 @@
+#pragma once
+#include <filesystem>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
+inline std::filesystem::path executableDirectory(const char* argv0) {
+    namespace fs = std::filesystem;
+#if defined(_WIN32)
+    std::vector<wchar_t> buffer(32768);
+    DWORD size = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (size && size < buffer.size()) return fs::path(std::wstring(buffer.data(), size)).parent_path();
+#elif defined(__APPLE__)
+    uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    std::vector<char> buffer(size);
+    if (_NSGetExecutablePath(buffer.data(), &size) == 0)
+        return fs::weakly_canonical(buffer.data()).parent_path();
+#elif defined(__linux__)
+    std::error_code ec;
+    auto path = fs::read_symlink("/proc/self/exe", ec);
+    if (!ec) return path.parent_path();
+#endif
+    return fs::absolute(argv0).parent_path();
+}
+
+inline std::filesystem::path resourceRoot(const char* argv0) {
+    namespace fs = std::filesystem;
+    for (const auto& root : {executableDirectory(argv0), fs::current_path(),
+                            fs::path(R"(@CMAKE_CURRENT_SOURCE_DIR@)")}) {
+        if (fs::is_regular_file(root / "shaders/vert.glsl") &&
+            fs::is_directory(root / "assets/textures")) return root;
+    }
+    throw std::runtime_error("Resources not found. Keep assets/ and shaders/ beside the executable.");
+}
